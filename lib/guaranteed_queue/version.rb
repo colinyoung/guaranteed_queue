@@ -1,0 +1,3 @@
+module GuaranteedQueue
+  VERSION = "0.0.1"
+end

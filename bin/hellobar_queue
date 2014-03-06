@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.push File.dirname(__FILE__) + '/../lib'
+
+if File.exists? rails_path = "#{Dir.pwd}/config/environment.rb"
+  require 'rails'
+  puts "Starting GuaranteedQueue for Rails app in #{Dir.pwd}."
+  puts "Loading application..."
+  require rails_path
+  ::Rails.application.load_tasks
+else
+  puts 'Not running as part of a Rails application.'
+end
+
+begin
+  require 'guaranteed_queue'
+rescue LoadError
+  require 'rubygems'
+  require 'guaranteed_queue'
+end
+
+GuaranteedQueue::Manager.run!

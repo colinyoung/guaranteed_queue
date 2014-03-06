@@ -1,0 +1,37 @@
+module GuaranteedQueue
+
+  module Delay
+    
+    # The main method called to delay a method call.
+    # In your class, use:
+    #    
+    #    delay :resize
+    #
+    # By default in a model called Image (if no args are passed)
+    # the resulting rake task will look like:
+    #
+    #    Rake.application.invoke_task "image:resize[1]"
+    # 
+    # where 'image' is the lowercase class name, resize is the method,
+    # and 1 is the ID of the instance.
+    # 
+    # In the above example, both image and the ID are determined automatically.
+    def delay task_name, namespace=self.class.name.downcase, id=self.id
+      body = "#{namespace}:#{task_name}[#{id}]".gsub(/^:/,'')
+      if GuaranteedQueue.config[:stub_requests]
+        begin
+          # Ensure private methods are called.
+          self.method(task_name).()
+        rescue NoMethodError
+          raise "Not sure how to queue task '#{body}' because there is no method #{self.class}##{task_name}: #{$!}"
+        end
+      else
+        manager = @_gq_manager || GuaranteedQueue::Manager.new
+        manager.send_message body
+        @_gq_manager ||= manager
+      end
+    end
+
+  end
+
+end
