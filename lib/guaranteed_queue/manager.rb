@@ -1,4 +1,3 @@
-require 'pry'
 require 'extensions/aws/sqs/received_message'
 
 module GuaranteedQueue
