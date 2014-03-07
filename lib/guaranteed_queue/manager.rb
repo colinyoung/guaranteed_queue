@@ -154,15 +154,18 @@ module GuaranteedQueue
           if internal_action? message
             internal_action! message
           else
+            task_name = message.body.split('[').first
             begin
               Rake.application.invoke_task message.body
             rescue RuntimeError
-              if $!.to_s == "Don't know how to build task '#{message.body}'"
+              if $!.to_s == "Don't know how to build task '#{task_name}'"
                 args = message.body.gsub(/[\[\]:]/, ',').gsub(/,$/, '')
                 Rake.application.invoke_task "GQ:build_and_run[#{args}]"
               end
             ensure
               Rake::Task['GQ:build_and_run'].reenable # required
+              Rake::Task[task_name].reenable # also required
+              puts "Re-enabled #{task_name}"
             end
           end
 
