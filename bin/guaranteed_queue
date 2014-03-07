@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+$0 = "guaranteed_queue"
+
 $LOAD_PATH.push File.dirname(__FILE__) + '/../lib'
 
 if File.exists? rails_path = "#{Dir.pwd}/config/environment.rb"
