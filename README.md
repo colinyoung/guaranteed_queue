@@ -11,7 +11,7 @@ GQ requires you to use Dead-Letter SQS queues, [which you can read about here](h
 Use two queues with the following format and settings. Note that you create the dead-letter queue first.
 
 | Queue 1 ||
-| ----------------------- |
+| ----------| ------------- |
 | Name | MyQueue_DeadLetter |
 | Receive Message Wait Time | 20 |
 | Delivery Delay | 2 minutes* |
@@ -19,7 +19,7 @@ Use two queues with the following format and settings. Note that you create the 
 *This allow failed jobs to retry at a reasonable interval
 
 | Queue 2 ||
-| ----------------------- |
+| ---------|-------------- |
 | Name | MyQueue |
 | Receive Message Wait Time | 20 |
 | Delivery Delay | 0 |
