@@ -166,7 +166,7 @@ module GuaranteedQueue
               end
             ensure
               Rake::Task['GQ:build_and_run'].reenable # required
-              Rake::Task[task_name].reenable # also required
+              Rake::Task[task_name].reenable rescue nil # also required
               Logger.info "Re-enabled #{task_name}"
             end
           end
