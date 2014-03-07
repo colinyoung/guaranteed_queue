@@ -7,6 +7,9 @@ if File.exists? rails_path = "#{Dir.pwd}/config/environment.rb"
   puts "Starting GuaranteedQueue for Rails app in #{Dir.pwd}."
   puts "Loading application..."
   require rails_path
+  if File.exists? initializer_path = "#{Dir.pwd}/config/initializers/guaranteed_queue.rb"
+  	require initializer_path
+  end
   ::Rails.application.load_tasks
 else
   puts 'Not running as part of a Rails application.'
