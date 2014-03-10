@@ -52,10 +52,14 @@ module GuaranteedQueue
       queues = sqs.queues.to_a
       return queues unless defined? ::Rails
       queues.select do |q|
-        if queue_name = ENV['GUARANTEED_QUEUE_NAME']
-          return [ q ] if q.url[/#{queue_name}$/]
+        if queue_name = ( ENV['GUARANTEED_QUEUE_NAME']
+          q.url[/#{queue_name}$/]
+        elsif ENV['GUARANTEED_QUEUE_FROM_HOST']
+          host = %x{hostname}.split('.').first
+          q.url[/#{host}$/]
+        else
+          q.url.downcase.include? Rails.env.to_s or q.url[/deadletter$/i]
         end
-        q.url.downcase.include? Rails.env.to_s or q.url[/deadletter$/i]
       end
     end
     private :get_queues
