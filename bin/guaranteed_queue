@@ -1,6 +1,12 @@
 #!/usr/bin/env ruby
 
+require 'guaranteed_queue/logger'
+
 $0 = "guaranteed_queue"
+
+module GQ
+  Logger = GuaranteedQueue::Logger
+end
 
 pid_path = "#{Dir.pwd}/tmp/pids/guaranteed_queue.pid"
 
@@ -9,10 +15,10 @@ if ARGV[0] == "stop"
   if File.exists? pid_path
     pid = File.read(pid_path)
     %x{kill #{pid}}
-    puts "Killed pid #{pid}"
+    GQ::Logger.info "Killed pid #{pid}"
     FileUtils.rm(pid_path)
   else
-    puts "Not running or no pid"
+    GQ::Logger.info "Not running or no pid"
   end
   exit!
 end
@@ -26,16 +32,16 @@ begin
 
   if File.exists? rails_path = "#{Dir.pwd}/config/environment.rb"
     require 'rails'
-    puts "Starting GuaranteedQueue for Rails app in #{Dir.pwd}."
-    puts "Loading application..."
+    GQ::Logger.info "Starting GuaranteedQueue for Rails app in #{Dir.pwd}."
+    GQ::Logger.info "Loading application..."
     require rails_path  
     if File.exists? initializer_path = "#{Dir.pwd}/config/initializers/guaranteed_queue.rb"
-      puts "Initializing with guaranteed_queue.rb"
+      GQ::Logger.info "Initializing with guaranteed_queue.rb"
     	require initializer_path
     end
     ::Rails.application.load_tasks
   else
-    puts 'Not running as part of a Rails application.'
+    GQ::Logger.info 'Not running as part of a Rails application.'
   end
 
   begin
@@ -49,7 +55,7 @@ begin
 
 rescue SystemExit, Interrupt
   
-  puts "[GuaranteedQueue] Quitting..."
+  GQ::Logger.info "[GuaranteedQueue] Quitting..."
   FileUtils.rm pid_path
 
 end

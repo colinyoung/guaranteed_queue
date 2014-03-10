@@ -52,6 +52,9 @@ module GuaranteedQueue
       queues = sqs.queues.to_a
       return queues unless defined? ::Rails
       queues.select do |q|
+        if queue_name = ENV['GUARANTEED_QUEUE_NAME']
+          return [ q ] if q.url[/#{queue_name}$/]
+        end
         q.url.downcase.include? Rails.env.to_s or q.url[/deadletter$/i]
       end
     end
