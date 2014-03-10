@@ -44,6 +44,12 @@ module GuaranteedQueue
       info "< #{stringify msg}".green
     end
 
+    private
+
+    def stringify msg
+      "#{msg.id[0...6]} (#{msg.body})"
+    end
+
     class << self
 
       [:info, :bright, :warn, :error, :success, :start, :stop, :message_sent, :message_received].each do |method|
@@ -58,10 +64,6 @@ module GuaranteedQueue
 
       def prefix
         "[GuaranteedQueue]"
-      end
-
-      def stringify msg
-        "#{msg.id[0...6]} (#{msg.body})"
       end
 
     end
