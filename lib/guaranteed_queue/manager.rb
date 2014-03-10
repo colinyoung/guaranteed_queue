@@ -50,12 +50,12 @@ module GuaranteedQueue
 
     def get_queues
       queues = sqs.queues.to_a
+      host = %x{hostname}.split('.').first rescue nil
       return queues unless defined? ::Rails
       queues.select do |q|
         if queue_name = ENV['GUARANTEED_QUEUE_NAME']
           q.url[/#{queue_name}$/]
-        elsif ENV['GUARANTEED_QUEUE_FROM_HOST']
-          host = %x{hostname}.split('.').first
+        elsif host and ['edge', 'staging', 'production'].include?(host)
           q.url[/#{host}$/]
         else
           q.url.downcase.include? Rails.env.to_s or q.url[/deadletter$/i]
