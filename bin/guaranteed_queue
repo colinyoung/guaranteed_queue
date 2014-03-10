@@ -2,27 +2,55 @@
 
 $0 = "guaranteed_queue"
 
+pid_path = "#{Dir.pwd}/tmp/pids/guaranteed_queue.pid"
+
+if ARGV[0] == "stop"
+  
+  if File.exists? pid_path
+    pid = File.read(pid_path)
+    %x{kill #{pid}}
+    puts "Killed pid #{pid}"
+    FileUtils.rm(pid_path)
+  else
+    puts "Not running or no pid"
+  end
+  exit!
+end
+
+# Write pid file to tmp
+File.open(pid_path, "w") {|f| f.write($$) }
+
 $LOAD_PATH.push File.dirname(__FILE__) + '/../lib'
 
-if File.exists? rails_path = "#{Dir.pwd}/config/environment.rb"
-  require 'rails'
-  puts "Starting GuaranteedQueue for Rails app in #{Dir.pwd}."
-  puts "Loading application..."
-  require rails_path  
-  if File.exists? initializer_path = "#{Dir.pwd}/config/initializers/guaranteed_queue.rb"
-    puts "Initializing with guaranteed_queue.rb"
-  	require initializer_path
-  end
-  ::Rails.application.load_tasks
-else
-  puts 'Not running as part of a Rails application.'
-end
-
 begin
-  require 'guaranteed_queue'
-rescue LoadError
-  require 'rubygems'
-  require 'guaranteed_queue'
+
+  if File.exists? rails_path = "#{Dir.pwd}/config/environment.rb"
+    require 'rails'
+    puts "Starting GuaranteedQueue for Rails app in #{Dir.pwd}."
+    puts "Loading application..."
+    require rails_path  
+    if File.exists? initializer_path = "#{Dir.pwd}/config/initializers/guaranteed_queue.rb"
+      puts "Initializing with guaranteed_queue.rb"
+    	require initializer_path
+    end
+    ::Rails.application.load_tasks
+  else
+    puts 'Not running as part of a Rails application.'
+  end
+
+  begin
+    require 'guaranteed_queue'
+  rescue LoadError
+    require 'rubygems'
+    require 'guaranteed_queue'
+  end
+
+  GuaranteedQueue::Manager.run!
+
+rescue SystemExit, Interrupt
+  
+  puts "[GuaranteedQueue] Quitting..."
+  FileUtils.rm pid_path
+
 end
 
-GuaranteedQueue::Manager.run!
