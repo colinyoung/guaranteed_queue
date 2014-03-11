@@ -1,6 +1,11 @@
 #!/usr/bin/env ruby
 
-require 'guaranteed_queue/logger'
+begin
+  require 'guaranteed_queue'
+rescue LoadError
+  require 'rubygems'
+  require 'guaranteed_queue'
+end
 
 $0 = "guaranteed_queue"
 
@@ -42,13 +47,6 @@ begin
     ::Rails.application.load_tasks
   else
     GQ::Logger.info 'Not running as part of a Rails application.'
-  end
-
-  begin
-    require 'guaranteed_queue'
-  rescue LoadError
-    require 'rubygems'
-    require 'guaranteed_queue'
   end
 
   GuaranteedQueue::Manager.run!

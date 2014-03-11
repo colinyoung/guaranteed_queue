@@ -18,11 +18,7 @@ module GuaranteedQueue
 
   def self.logger reload=false
     if !@logger or reload
-      @logger = GuaranteedQueue::Logger.build.tap do |logger|
-        logger.formatter = proc do |severity, datetime, progname, msg|
-          "#{severity} #{datetime.strftime("%Y-%m-%d %H:%M:%S")} #{logger.class.prefix} #{msg}\n"
-        end
-      end
+      @logger = GuaranteedQueue::Logger.build
     end
 
     @logger

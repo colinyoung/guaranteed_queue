@@ -7,11 +7,19 @@ module GuaranteedQueue
 
     def self.build *args
       if ENV['RACK_ENV'] == "development" || ENV['RAILS_ENV'] == "development" || GuaranteedQueue.config[:stub_requests]
-        return new($stdout)
+        return new($stdout).add_formatter!
       end
 
       FileUtils.mkdir_p File.dirname(log_path)
-      new(log_path)
+      new(log_path).add_formatter!
+    end
+
+    def add_formatter!
+      self.formatter = proc do |severity, datetime, progname, msg|
+        "#{severity}#{' ' if severity.length < 5} #{datetime.strftime("%Y-%m-%d %H:%M:%S")} #{self.class.prefix} #{msg}\n"
+      end
+
+      self
     end
 
     def info_with_message text, message=nil
