@@ -5,11 +5,17 @@ require 'colorize'
 module GuaranteedQueue
   class Logger < ::Logger
 
-    def initialize *args
-      super *args unless args.empty?
+    def self.build *args
+      if ENV['RACK_ENV'] == "development" || ENV['RAILS_ENV'] == "development" || GuaranteedQueue.config[:stub_requests]
+        return new($stdout)
+      end
 
-      filedev = self.class.log_path
-      super(filedev)
+      FileUtils.mkdir_p File.dirname(log_path)
+      new(log_path)
+    end
+
+    def info_with_message text, message=nil
+      info "- #{text}#{' ' + stringify(message) if message}".white
     end
 
     def bright text, message=nil
@@ -52,9 +58,9 @@ module GuaranteedQueue
 
     class << self
 
-      [:info, :bright, :warn, :error, :success, :start, :stop, :message_sent, :message_received].each do |method|
+      [:info,:info_with_message, :bright, :warn, :error, :success, :start, :stop, :message_sent, :message_received].each do |method|
         define_method method do |*args|
-          $GQ_LOG.send(method, *args)
+          GuaranteedQueue.logger.__send__(method, *args)
         end
       end
 
@@ -71,8 +77,3 @@ module GuaranteedQueue
   end
 end
 
-$GQ_LOG = GuaranteedQueue::Logger.new.tap do |logger|
-  logger.formatter = proc do |severity, datetime, progname, msg|
-    "#{severity} #{datetime.strftime("%Y-%m-%d %H:%M:%S")} #{logger.class.prefix} #{msg}\n"
-  end
-end

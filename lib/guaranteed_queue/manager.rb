@@ -147,7 +147,7 @@ module GuaranteedQueue
     end
 
     def accept message, queue=main_queue
-      Logger.info "Accepted on thread #{next_thread_index} from #{queue == main_queue ? 'main queue' : 'DL queue'}", message
+      Logger.info_with_message "Accepted on thread #{next_thread_index} from #{queue == main_queue ? 'main queue' : 'DL queue'}", message
       @accepted += 1
 
       message.freeze! # ensure message cannot be deleted during processing
