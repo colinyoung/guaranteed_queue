@@ -6,5 +6,5 @@ GuaranteedQueue.config(
   region: ENV['AWS_REGION'] || 'us-east-1',
   dead_letter_poll_interval_seconds: 30,
   message_failures_allowed: 0,
-  stub_requests: ENV['RACK_ENV'] == 'test' || ENV['RAILS_ENV'] == 'test'
+  stub_requests: ENV['RACK_ENV'] == 'test' || ENV['RAILS_ENV'] == 'test' || ENV['RAILS_ENV'] == 'development'
 )
