@@ -182,7 +182,7 @@ module GuaranteedQueue
         rescue Exception => exception
           @failed += 1
           @running.delete message.id
-          Logger.error $!
+          Logger.error $!, message
           Thread.new { prune_threads! } # after this thread dies, prune it
           raise exception # fail the message
         end
