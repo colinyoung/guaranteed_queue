@@ -119,6 +119,16 @@ If you are running GuaranteedQueue as a queue for a Rails app, then your chosen 
       main_queue: RailsApp_production
       deadletter_queue: RailsApp_production_deadletter
 
+## Whitelisted Exceptions
+
+Sometimes, you will have errors which occur that are unrecoverable. In this instance, you don't want to have those jobs clogging up GQ. You can fix this by adding (stringified) exceptions to the config hash:
+
+    GuaranteedQueue.config(
+      ...
+      whitelisted_exceptions: [ 'ActiveRecord::RecordNotFound' ]
+      ...
+    )
+
 ## Testing
 
 If your application is running in a `RAILS_ENV` or `RACK_ENV` of `test`, you're good to go. Otherwise, just add `stub_requests => true` to your call to `GuaranteedQueue.config` like so:

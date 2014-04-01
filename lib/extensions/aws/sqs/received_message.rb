@@ -22,10 +22,15 @@ class AWS::SQS::ReceivedMessage
 
   def delete!
     @@old_delete.bind(self).()
+    @deleted = true
   end
 
   def frozen?
     @frozen
+  end
+
+  def deleted?
+    @deleted
   end
 
 end

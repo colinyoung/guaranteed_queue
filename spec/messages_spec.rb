@@ -1,5 +1,8 @@
 require 'spec_helper'
 
+class WhitelistedException < Exception; end
+class NotWhitelistedException < Exception; end
+
 describe GuaranteedQueue::Manager do
 
   subject do
@@ -8,10 +11,12 @@ describe GuaranteedQueue::Manager do
 
   let(:main_queue) { subject.main_queue }
   let(:dead_letter_queue) { subject.dead_letter_queue }
+  let(:original_whitelist) { subject.config[:whitelisted_exceptions] }
 
   before do
     subject.reset_receive!
     subject.poll.should be_nil
+    subject.whitelisted_exceptions = original_whitelist
   end
 
   it 'should initialize an SQS queue' do
@@ -83,6 +88,39 @@ describe GuaranteedQueue::Manager do
     sleep 1
 
     msg.should be_frozen
+  end
+
+  it 'should delete a message that throws a whitelisted exception' do
+    subject.whitelisted_exceptions << 'WhitelistedException' unless subject.whitelisted_exceptions.include? 'WhitelistedException'
+    msg = subject.send :stub_send_message!, "$exception=WhitelistedException"
+    msg = subject.poll main_queue
+
+    sleep 1
+
+    msg.should_not be_frozen
+    msg.should be_deleted
+  end
+
+  it 'should delete a message that throws a RecordNotFound by default' do
+    require 'active_record'
+    require 'active_record/errors'
+    msg = subject.send :stub_send_message!, "$exception=ActiveRecord::RecordNotFound"
+    msg = subject.poll main_queue
+
+    sleep 1
+
+    msg.should_not be_frozen
+    msg.should be_deleted
+  end
+
+  it 'should not delete a message that throws a whitelisted exception' do
+    msg = subject.send :stub_send_message!, "$exception=NotWhitelistedException"
+    msg = subject.poll main_queue
+
+    sleep 1
+
+    msg.should be_frozen
+    msg.should_not be_deleted
   end
 
 end

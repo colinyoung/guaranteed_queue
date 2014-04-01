@@ -14,11 +14,13 @@ module GuaranteedQueue
     end
 
     attr_reader :sqs, :queued, :accepted, :completed, :failed
+    attr_accessor :whitelisted_exceptions
 
     def initialize options={}
       @threads = []
       @queued = []
       @running = []
+      @whitelisted_exceptions = config[:whitelisted_exceptions] || []
       @accepted = 0
       @completed = 0
       @failed = 0
@@ -183,10 +185,14 @@ module GuaranteedQueue
           @failed += 1
           @running.delete message.id
           Logger.error $!, message
-          message.unfreeze!
-          message.delete!
+
+          if @whitelisted_exceptions.include? exception.class.name or @whitelisted_exceptions.include? exception.class
+            message.unfreeze!
+            message.delete!
+            Logger.info_with_message "Deleting message due to unrecoverable exception #{exception.class.name}: ", message
+          end
+
           Thread.new { prune_threads! } # after this thread dies, prune it
-          Logger.info_with_message "Deleting message due to unrecoverable failure: ", message
           raise exception # fail the message
         end
       end
@@ -260,6 +266,8 @@ module GuaranteedQueue
         sleep Integer(arg)
       when '$fail'
         raise "Failed job"
+      when '$exception'
+        raise Kernel.const_get(arg)
       end
     end
 
