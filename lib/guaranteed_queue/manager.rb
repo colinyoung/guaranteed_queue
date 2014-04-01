@@ -197,7 +197,7 @@ module GuaranteedQueue
         expired = ct > max if ct
 
         if max < 1
-          Logger.info "Expiration is disabled, message will be retried forever", message
+          Logger.info_with_message "Expiration is disabled, message will be retried forever", message
         elsif ct != nil
           # Dead letter rejects must expire (really) old jobs
           Logger.warn "DeadLetter message received ~#{ct} times - " +
@@ -206,7 +206,7 @@ module GuaranteedQueue
           # delete message if expired
         end
       else
-        Logger.info "All workers busy. Message will be retried after visibility timeout", message
+        Logger.info_with_message "All workers busy. Message will be retried after visibility timeout", message
         raise BusyWorkersException
       end
 
