@@ -1,6 +1,6 @@
 # configure.rb
 GuaranteedQueue.config(
-  max_threads: 4,
+  max_threads: 8,
   access_key_id: ENV['AWS_ACCESS_KEY_ID'] || 'test',
   secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'] || 'test',
   region: ENV['AWS_REGION'] || 'us-east-1',

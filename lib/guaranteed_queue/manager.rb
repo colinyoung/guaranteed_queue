@@ -184,6 +184,9 @@ module GuaranteedQueue
           @running.delete message.id
           Logger.error $!, message
           Thread.new { prune_threads! } # after this thread dies, prune it
+          message.unfreeze!
+          message.delete!
+          Logger.info_with_message "Deleting message due to unrecoverable failure: ", message
           raise exception # fail the message
         end
       end
