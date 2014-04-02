@@ -185,6 +185,7 @@ module GuaranteedQueue
           @failed += 1
           @running.delete message.id
           Logger.error $!, message
+          Logger.failed message, exception
 
           if @whitelisted_exceptions.include? exception.class.name or @whitelisted_exceptions.include? exception.class
             message.unfreeze!

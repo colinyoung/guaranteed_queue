@@ -56,6 +56,12 @@ module GuaranteedQueue
       reset_logdev
     end
 
+    def failed message, exception
+      switch_logdev 'failed'
+      info "! Failed: #{stringify(message)}\nException: #{exception}\n#{exception.backtrace[0...5].join("\n")}\n...etc\n"
+      reset_logdev
+    end
+
     def message_sent text
       info "> #{text}".cyan
     end
@@ -83,7 +89,7 @@ module GuaranteedQueue
 
     class << self
 
-      [:info, :info_with_message, :bright, :warn, :error, :success, :start, :stop, :message_sent, :message_received, :deleted].each do |method|
+      [:info, :info_with_message, :bright, :warn, :error, :success, :start, :stop, :message_sent, :message_received, :deleted, :failed].each do |method|
         define_method method do |*args|
           GuaranteedQueue.logger.__send__(method, *args)
         end
