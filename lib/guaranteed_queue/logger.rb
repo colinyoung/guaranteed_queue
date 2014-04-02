@@ -50,6 +50,12 @@ module GuaranteedQueue
       info "$ #{text}#{' ' + stringify(message) if message}".colorize(:red).on_white
     end
 
+    def deleted text, message, exception
+      switch_logdev 'deleted'
+      info "! #{text}#{stringify(message)}\nException: #{exception}\n#{exception.backtrace[0...5].join("\n")}\n...etc\n"
+      reset_logdev
+    end
+
     def message_sent text
       info "> #{text}".cyan
     end
@@ -60,13 +66,24 @@ module GuaranteedQueue
 
     private
 
+    def switch_logdev suffix=nil
+      suffix = "." + suffix unless suffix.nil?
+      @_original_logdev = @logdev
+      @logdev = LogDevice.new(self.class.log_path.gsub('.log', "#{suffix}.log"), shift_age: 0, shift_size: 1048576)
+    end
+
+    def reset_logdev
+      @logdev = @_original_logdev
+      @_original_logdev = nil
+    end
+
     def stringify msg
       "#{msg.id[0...6]} (#{msg.body})"
     end
 
     class << self
 
-      [:info,:info_with_message, :bright, :warn, :error, :success, :start, :stop, :message_sent, :message_received].each do |method|
+      [:info, :info_with_message, :bright, :warn, :error, :success, :start, :stop, :message_sent, :message_received, :deleted].each do |method|
         define_method method do |*args|
           GuaranteedQueue.logger.__send__(method, *args)
         end

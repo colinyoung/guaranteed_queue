@@ -189,7 +189,7 @@ module GuaranteedQueue
           if @whitelisted_exceptions.include? exception.class.name or @whitelisted_exceptions.include? exception.class
             message.unfreeze!
             message.delete!
-            Logger.info_with_message "Deleting message due to unrecoverable exception #{exception.class.name}: ", message
+            Logger.deleted "Deleted message due to unrecoverable exception #{exception.class.name}: ", message, exception
           end
 
           Thread.new { prune_threads! } # after this thread dies, prune it
