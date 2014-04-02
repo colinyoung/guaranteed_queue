@@ -6,7 +6,7 @@ module GuaranteedQueue
   class Logger < ::Logger
 
     def self.build *args
-      if ENV['RACK_ENV'] == "development" || ENV['RAILS_ENV'] == "development" || GuaranteedQueue.config[:stub_requests]
+      unless log_to_file?
         return new($stdout).add_formatter!
       end
 
@@ -73,18 +73,24 @@ module GuaranteedQueue
     private
 
     def switch_logdev suffix=nil
+      return unless log_to_file?
       suffix = "." + suffix unless suffix.nil?
       @_original_logdev = @logdev
       @logdev = LogDevice.new(self.class.log_path.gsub('.log', "#{suffix}.log"), shift_age: 0, shift_size: 1048576)
     end
 
     def reset_logdev
+      return unless log_to_file?
       @logdev = @_original_logdev
       @_original_logdev = nil
     end
 
     def stringify msg
       "#{msg.id[0...6]} (#{msg.body})"
+    end
+
+    def log_to_file?
+      self.class.log_to_file?
     end
 
     class << self
@@ -101,6 +107,10 @@ module GuaranteedQueue
 
       def prefix
         "[GuaranteedQueue]"
+      end
+
+      def log_to_file?
+        ENV['RACK_ENV'] != "development" && ENV['RAILS_ENV'] != "development" && !GuaranteedQueue.config[:stub_requests]
       end
 
     end
