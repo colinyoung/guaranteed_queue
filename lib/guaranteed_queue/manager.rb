@@ -163,9 +163,13 @@ module GuaranteedQueue
           if internal_action? message
             internal_action! message
           else
-            task_name = message.body.split('[').first
+            parts = message.body.match(/^(.+)\[(.+)\]/)
+            task_name = parts[1]
+            task_args = parts[2] || ''
+
             begin
-              Rake.application.invoke_task message.body
+              task_args.gsub!(/"/,'')
+              Rake.application.invoke_task "#{task_name}[#{task_args}]"
             rescue RuntimeError
               if $!.to_s == "Don't know how to build task '#{task_name}'"
                 args = message.body.gsub(/[\[\]:]/, ',').gsub(/,$/, '')
