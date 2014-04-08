@@ -16,8 +16,8 @@ module GuaranteedQueue
     # and 1 is the ID of the instance.
     # 
     # In the above example, both image and the ID are determined automatically.
-    def delay task_name, namespace=self.class.name.downcase, id=self.id
-      body = "#{namespace}:#{task_name}[#{id}]".gsub(/^:/,'')
+    def delay task_name, namespace=self.class.name, id=self.id
+      body = "#{namespace.underscore.downcase}:#{task_name}[#{id}]".gsub(/^:/,'')
       if GuaranteedQueue.config[:stub_requests]
         begin
           # Ensure private methods are called.
