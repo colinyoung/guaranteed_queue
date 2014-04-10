@@ -57,10 +57,12 @@ module GuaranteedQueue
       queues.select do |q|
         if queue_name = ENV['GUARANTEED_QUEUE_NAME']
           q.url[/#{queue_name}$/]
+        elsif queue_env = config[:queue_env]
+          q.url.downcase.include? queue_env
         elsif host and ['edge', 'staging', 'production'].include?(host)
           q.url[/#{host}$/]
         else
-          q.url.downcase.include? Rails.env.to_s or q.url[/deadletter$/i]
+          q.url.downcase.include? Rails.env.to_s
         end
       end
     end
