@@ -129,6 +129,16 @@ Sometimes, you will have errors which occur that are unrecoverable. In this inst
       ...
     )
 
+## Configuration options
+
+```ruby
+GuaranteedQueue.config(
+  :queue_env => 'edge', # set the queue's env for queue name like *_#{queue_env}
+  :max_threads => 10, # your ActiveRecord connection pool should be 2x this number
+  :utilization_threshold => 0.5 # jobs will not be started if jobs running / max_threads > this ratio
+)
+```
+
 ## Testing
 
 If your application is running in a `RAILS_ENV` or `RACK_ENV` of `test`, you're good to go. Otherwise, just add `stub_requests => true` to your call to `GuaranteedQueue.config` like so:

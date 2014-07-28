@@ -78,6 +78,13 @@ module GuaranteedQueue
         return Logger.warn "Waiting for another loop - 100% utilization of workers"
       end
 
+      # Wait over 50% utilization
+      if threshold = GuaranteedQueue.config[:utilization_threshold]
+        if (busy.to_f / max_limit) > threshold
+          return Logger.warn "Waiting for another loop - past utilization threshold of #{threshold}."
+        end
+      end
+
       begin
         Logger.info "Receiving up to #{limit} messages (#{busy} are busy)"
         main_queue.receive_message(:limit => limit) do |message|
@@ -132,7 +139,7 @@ module GuaranteedQueue
     end
 
     def status
-      Logger.bright "#{busy}/#{max} threads alive. #{@completed} completed, #{@accepted} accepted, #{@queued.count} queued, #{@failed} failed"
+      Logger.bright "#{busy}/#{max_limit} threads alive. #{@completed} completed, #{@accepted} accepted, #{@queued.count} queued, #{@failed} failed"
       prune_threads!
     end
 
@@ -358,6 +365,5 @@ module GuaranteedQueue
     def max_limit
       receive_options[:limit]
     end
-    alias :max :max_limit
   end
 end
