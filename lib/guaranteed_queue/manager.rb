@@ -18,6 +18,7 @@ module GuaranteedQueue
 
     def initialize options={}
       @threads = []
+      @connections = []
       @queued = []
       @running = []
       @whitelisted_exceptions = config[:whitelisted_exceptions] || []
@@ -70,8 +71,24 @@ module GuaranteedQueue
 
     # Receive messages once, on demand
     def poll queue=main_queue
-      msg = queue.receive_message
-      handle msg, queue if msg
+      limit = max_limit - busy
+
+      # 100% utilization of threads
+      if limit == 0
+        return Logger.warn "Waiting for another loop - 100% utilization of workers"
+      end
+
+      begin
+        Logger.info "Receiving up to #{limit} messages (#{busy} are busy)"
+        main_queue.receive_message(:limit => limit) do |message|
+          handle message
+        end
+      rescue SignalException => e
+        raise e
+      rescue Exception => e
+        Logger.error $!
+        poll!(restart: true)
+      end
     end
 
     # Continuously receive messages
@@ -82,6 +99,7 @@ module GuaranteedQueue
         Logger.info "Started polling retries from #{dead_letter_queue.url}" if dead_letter_queue
 
         # Set the status timer
+        every_few_seconds :poll
         every_few_seconds :status
 
         # Poll deadletter queue also
@@ -100,18 +118,11 @@ module GuaranteedQueue
             end
           end
         end
-      end
 
-      # poll main queue indefinitely
-      begin
-        main_queue.poll do |message|
-          handle message
+        # Wait loop (:every_few_seconds occurs here)
+        while true do
+          # main run loop
         end
-      rescue SignalException => e
-        raise e
-      rescue Exception => e
-        Logger.error $!
-        poll!(restart: true)
       end
     end
 
@@ -121,7 +132,7 @@ module GuaranteedQueue
     end
 
     def status
-      Logger.bright "#{@threads.compact.count {|t| t.alive? }} threads alive. #{@completed} completed, #{@accepted} accepted, #{@queued.count} queued, #{@failed} failed"
+      Logger.bright "#{busy}/#{max} threads alive. #{@completed} completed, #{@accepted} accepted, #{@queued.count} queued, #{@failed} failed"
       prune_threads!
     end
 
@@ -156,6 +167,8 @@ module GuaranteedQueue
 
       message.freeze! # ensure message cannot be deleted during processing
 
+      i = next_thread_index
+
       @threads[next_thread_index] = Thread.new do
         begin
           Logger.start "Performing job for", message
@@ -171,6 +184,11 @@ module GuaranteedQueue
 
             begin
               task_args.gsub!(/"/,'')
+              
+              conn = ActiveRecord::Base.connection_pool.checkout
+              @connections[i] = conn
+              Logger.info_with_message "CHECKED OUT t#{i}", message if GuaranteedQueue.config[:verbose]
+
               Rake.application.invoke_task "#{task_name}[#{task_args}]"
             rescue RuntimeError
               if $!.to_s == "Don't know how to build task '#{task_name}'"
@@ -180,6 +198,12 @@ module GuaranteedQueue
                 raise "No match for task #{task_name}"
               end
             ensure
+
+              conn = @connections[i]
+              Logger.info_with_message "CHECKED IN t#{i}", message if GuaranteedQueue.config[:verbose]
+              raise "!!! Lost handle on connection #{i}" if conn.nil?
+              ActiveRecord::Base.connection_pool.checkin(conn) # check connection used back into pool
+
               Rake::Task['GQ:build_and_run'].reenable # required
               Rake::Task[task_name].reenable rescue nil # also required
               Logger.info "Re-enabled #{task_name}"
@@ -206,7 +230,6 @@ module GuaranteedQueue
     end
 
     def reject message, queue=main_queue
-
       if queue == dead_letter_queue
         ct = message.approximate_receive_count
         max = config[:message_failures_allowed]
@@ -306,7 +329,7 @@ module GuaranteedQueue
       end
     end
 
-    def every_few_seconds method, timeout=10
+    def every_few_seconds method, timeout=5
       Thread.new do
         while true do
           send(method)
@@ -319,5 +342,22 @@ module GuaranteedQueue
       @threads.delete_if {|t| !t.alive? }
     end
 
+    def poll_options
+      { :batch_size => [10, GuaranteedQueue.config[:max_threads]].min }
+    end
+
+    def receive_options
+      { :limit => poll_options[:batch_size] }
+    end
+
+    def busy
+      @threads.compact.count {|t| t.alive? }
+    end
+    alias :alive :busy
+
+    def max_limit
+      receive_options[:limit]
+    end
+    alias :max :max_limit
   end
 end
