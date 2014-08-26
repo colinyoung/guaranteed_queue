@@ -97,39 +97,10 @@ module GuaranteedQueue
       end
     end
 
-    # Continuously receive messages
-    def poll! options={}
-      unless options[:restart]
-
-        Logger.info "Started polling #{main_queue.url}"
-        Logger.info "Started polling retries from #{dead_letter_queue.url}" if dead_letter_queue
-
-        # Set the status timer
-        every_few_seconds :poll
-        every_few_seconds :status
-
-        # Poll deadletter queue also
-        if dead_letter_queue
-          Thread.new do
-            begin
-              Logger.info "Will poll from DeadLetter queue every #{config[:dead_letter_poll_interval_seconds]} seconds."
-              while true do
-                Logger.info "Polling DeadLetter queue."
-                poll dead_letter_queue
-                sleep config[:dead_letter_poll_interval_seconds]
-              end
-            rescue Exception
-              Logger.error $!
-              raise e
-            end
-          end
-        end
-
-        # Wait loop (:every_few_seconds occurs here)
-        while true do
-          # main run loop
-        end
-      end
+    # Receive messages
+    def poll!
+      @poller = Poller.new(manager: self).tap {|p| p.async.run(main_queue) }
+      sleep
     end
 
     def handle msg, queue=main_queue
@@ -324,15 +295,6 @@ module GuaranteedQueue
           md5_of_body: message.md5,
           receipt_handle: message.handle
         }
-      end
-    end
-
-    def every_few_seconds method, timeout=5
-      Thread.new do
-        while true do
-          send(method)
-          sleep timeout
-        end
       end
     end
 

@@ -1,5 +1,6 @@
 require 'aws-sdk'
 require 'rake'
+require 'celluloid'
 
 basedir = File.dirname(__FILE__).split('/')
 basedir.pop
@@ -28,5 +29,6 @@ end
 require "guaranteed_queue/version"
 require "guaranteed_queue/configure"
 require "guaranteed_queue/delay"
+require "guaranteed_queue/poller"
 require "guaranteed_queue/manager"
 load "tasks/GQ.rake"
