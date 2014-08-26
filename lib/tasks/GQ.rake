@@ -6,6 +6,8 @@ namespace :GQ do
     method    = args[:method]
     id        = args[:id]
     GuaranteedQueue::Logger.info "#{klass}##{method} invoked with #{id}..."
-    klass.classify.constantize.find(id).send(method)
+    ActiveRecord::Base.connection_pool.with_connection do
+      klass.classify.constantize.find(id).send(method)
+    end
   end
 end

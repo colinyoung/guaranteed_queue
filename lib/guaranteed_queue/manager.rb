@@ -18,7 +18,6 @@ module GuaranteedQueue
 
     def initialize options={}
       @threads = []
-      @connections = []
       @queued = []
       @running = []
       @whitelisted_exceptions = config[:whitelisted_exceptions] || []
@@ -191,12 +190,10 @@ module GuaranteedQueue
 
             begin
               task_args.gsub!(/"/,'')
-              
-              conn = ActiveRecord::Base.connection_pool.checkout
-              @connections[i] = conn
-              Logger.info_with_message "CHECKED OUT t#{i}", message if GuaranteedQueue.config[:verbose]
 
-              Rake.application.invoke_task "#{task_name}[#{task_args}]"
+              ActiveRecord::Base.connection_pool.with_connection do
+                Rake.application.invoke_task "#{task_name}[#{task_args}]"
+              end
             rescue RuntimeError
               if $!.to_s == "Don't know how to build task '#{task_name}'"
                 args = message.body.gsub(/[\[\]:]/, ',').gsub(/,$/, '')
@@ -205,12 +202,6 @@ module GuaranteedQueue
                 raise "No match for task #{task_name}"
               end
             ensure
-
-              conn = @connections[i]
-              Logger.info_with_message "CHECKED IN t#{i}", message if GuaranteedQueue.config[:verbose]
-              raise "!!! Lost handle on connection #{i}" if conn.nil?
-              ActiveRecord::Base.connection_pool.checkin(conn) # check connection used back into pool
-
               Rake::Task['GQ:build_and_run'].reenable # required
               Rake::Task[task_name].reenable rescue nil # also required
               Logger.info "Re-enabled #{task_name}"
