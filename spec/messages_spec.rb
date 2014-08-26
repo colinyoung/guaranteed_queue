@@ -15,18 +15,18 @@ describe GuaranteedQueue::Manager do
 
   before do
     subject.reset_receive!
-    subject.poll.should be_nil
+    expect(subject.poll).to be_nil
     subject.whitelisted_exceptions = original_whitelist
   end
 
   it 'should initialize an SQS queue' do
-    subject.main_queue.should_not be_nil
-    subject.dead_letter_queue.should_not be_nil
+    expect(subject.main_queue).not_to be_nil
+    expect(subject.dead_letter_queue).not_to be_nil
   end
 
   it 'should receive a test message that it sends itself' do
     msg = subject.send :stub_send_message!
-    subject.receive_message.id.should == msg[:message_id]
+    expect(subject.receive_message.id).to eq(msg[:message_id])
   end
 
   it 'should handle a test message that it sends itself' do
@@ -39,9 +39,9 @@ describe GuaranteedQueue::Manager do
 
     sleep 1
 
-    subject.completed.should == 1
+    expect(subject.completed).to eq(1)
 
-    subject.receive_message.should be_nil # no more messages in queue
+    expect(subject.receive_message).to be_nil # no more messages in queue
   end
 
   it 'should reject a failed message' do
@@ -52,9 +52,9 @@ describe GuaranteedQueue::Manager do
 
     sleep 1
 
-    subject.failed.should == 1
+    expect(subject.failed).to eq(1)
 
-    subject.receive_message.id.should == received.id # message should still be in queue
+    expect(subject.receive_message.id).to eq(received.id) # message should still be in queue
   end
 
   it 'should move a failed message to dead-letter after enough rejections' do
@@ -65,17 +65,17 @@ describe GuaranteedQueue::Manager do
     2.times do
       msg = subject.poll main_queue
       sleep 2 # wait for job to be accepted and run
-      subject.should_not be_busy
+      expect(subject).not_to be_busy
     end
 
     # jobs all fail immediately
-    subject.failed.should == 2
-    subject.accepted.should == 2
-    subject.instance_variable_get(:@threads).should be_empty
+    expect(subject.failed).to eq(2)
+    expect(subject.accepted).to eq(2)
+    expect(subject.instance_variable_get(:@threads)).to be_empty
 
     # since AWS would handle this for us, stub the receive methods in between
-    main_queue.stub(:receive_message).and_return nil
-    dead_letter_queue.stub(:receive_message).and_return msg
+    allow(main_queue).to receive(:receive_message).and_return nil
+    allow(dead_letter_queue).to receive(:receive_message).and_return msg
 
     expect { subject.poll main_queue }.to change { subject.accepted }.by 0
     expect { subject.poll dead_letter_queue }.to change { subject.accepted }.by 1
@@ -87,7 +87,7 @@ describe GuaranteedQueue::Manager do
 
     sleep 1
 
-    msg.should be_frozen
+    expect(msg).to be_frozen
   end
 
   it 'should delete a message that throws a whitelisted exception' do
@@ -97,8 +97,8 @@ describe GuaranteedQueue::Manager do
 
     sleep 1
 
-    msg.should_not be_frozen
-    msg.should be_deleted
+    expect(msg).not_to be_frozen
+    expect(msg).to be_deleted
   end
 
   it 'should delete a message that throws a RecordNotFound by default' do
@@ -109,8 +109,8 @@ describe GuaranteedQueue::Manager do
 
     sleep 1
 
-    msg.should_not be_frozen
-    msg.should be_deleted
+    expect(msg).not_to be_frozen
+    expect(msg).to be_deleted
   end
 
   it 'should not delete a message that throws a whitelisted exception' do
@@ -119,8 +119,8 @@ describe GuaranteedQueue::Manager do
 
     sleep 1
 
-    msg.should be_frozen
-    msg.should_not be_deleted
+    expect(msg).to be_frozen
+    expect(msg).not_to be_deleted
   end
 
 end
