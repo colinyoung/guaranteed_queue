@@ -155,15 +155,17 @@ module GuaranteedQueue
           if internal_action? message
             internal_action! message
           else
-            parts = message.body.match(/^(.+)\[(.+)\]/)
+            parts = message.body.match(/^(.+)\[(.+)\]|(.+)/)
             task_name = parts[1]
             task_args = parts[2] || ''
+            task_name ||= parts[3] # no args given for this task
 
             begin
-              task_args.gsub!(/"/,'')
+              task = task_name
+              task += "[#{task_args.gsub!(/"/,'')}]" if task_args.present?
 
               ActiveRecord::Base.connection_pool.with_connection do
-                Rake.application.invoke_task "#{task_name}[#{task_args}]"
+                Rake.application.invoke_task(task)
               end
             rescue RuntimeError
               if $!.to_s == "Don't know how to build task '#{task_name}'"
