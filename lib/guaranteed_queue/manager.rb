@@ -169,7 +169,7 @@ module GuaranteedQueue
               end
             rescue RuntimeError
               if $!.to_s == "Don't know how to build task '#{task_name}'"
-                args = message.body.gsub(/[\[\]:]/, ',').gsub(/,$/, '')
+                args = message.body.gsub(/\b([\[\]:])\b{1}/, ',').gsub(/,$/, '')
                 Rake.application.invoke_task "GQ:build_and_run[#{args}]"
               else
                 raise "No match for task #{task_name}"

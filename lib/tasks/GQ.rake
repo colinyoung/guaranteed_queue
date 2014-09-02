@@ -2,7 +2,7 @@ namespace :GQ do
   desc "builds and runs a job from component parts"
   task :build_and_run, [:class_name, :method, :id] do |t, args|
     raise "No Rails environment" unless defined? ::Rails
-    klass       = args[:class_name].classify
+    klass       = args[:class_name].gsub(/::(\w)/) {|m| m.upcase }.classify
     method      = args[:method]
     id          = args[:id]
     separator   = id.present? ? '#' : '.'
