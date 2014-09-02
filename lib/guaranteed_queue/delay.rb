@@ -22,8 +22,12 @@ module GuaranteedQueue
         begin
           # Ensure private methods are called.
           self.method(task_name).()
-        rescue NoMethodError
-          raise "Not sure how to queue task '#{body}' because there is no method #{self.class}##{task_name}: #{$!}"
+        rescue NoMethodError => e
+          if e.message.include?("undefined method `#{task_name}'")
+            raise "Not sure how to queue task '#{body}' because there is no method #{self.class}##{task_name}: #{$!}"
+          else
+            raise e
+          end
         end
       else
         manager = @_gq_manager || GuaranteedQueue::Manager.new
