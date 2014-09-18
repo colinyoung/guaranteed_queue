@@ -170,7 +170,11 @@ module GuaranteedQueue
             rescue RuntimeError
               if $!.to_s == "Don't know how to build task '#{task_name}'"
                 args = message.body.gsub(/\b([\[\]:])\b{1}/, ',').gsub(/,$/, '')
-                Rake.application.invoke_task "GQ:build_and_run[#{args}]"
+                begin
+                  Rake.application.invoke_task "GQ:build_and_run[#{args}]"
+                rescue Exception => exception
+                  fail! message, exception
+                end
               else
                 raise "No match for task #{task_name}"
               end
@@ -183,16 +187,7 @@ module GuaranteedQueue
 
           complete message
         rescue Exception => exception
-          @failed += 1
-          @running.delete message.id
-          Logger.error $!, message
-          Logger.failed message, exception
-
-          if @whitelisted_exceptions.include? exception.class.name or @whitelisted_exceptions.include? exception.class
-            message.unfreeze!
-            message.delete!
-            Logger.deleted "Deleted message due to unrecoverable exception #{exception.class.name}: ", message, exception
-          end
+          fail! message, exception
 
           Thread.new { prune_threads! } # after this thread dies, prune it
           raise exception # fail the message
@@ -239,6 +234,19 @@ module GuaranteedQueue
       message.delete!
       Logger.success "Deleting and completing ", message
       reset_receive! if config[:stub_requests]
+    end
+
+    def fail! message, exception
+      @failed += 1
+      @running.delete message.id
+      Logger.error $!, message
+      Logger.failed message, exception
+
+      if @whitelisted_exceptions.include? exception.class.name or @whitelisted_exceptions.include? exception.class
+        message.unfreeze!
+        message.delete!
+        Logger.deleted "Deleted message due to unrecoverable exception #{exception.class.name}: ", message, exception
+      end
     end
 
     def busy?
