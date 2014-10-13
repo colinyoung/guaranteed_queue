@@ -17,6 +17,7 @@ module GuaranteedQueue
     attr_accessor :whitelisted_exceptions
 
     def initialize options={}
+      @options = options
       @threads = []
       @queued = []
       @running = []
@@ -55,7 +56,7 @@ module GuaranteedQueue
       host = %x{hostname}.split('.').first rescue nil
       return queues unless defined? ::Rails
       queues.select do |q|
-        if queue_name = ENV['GUARANTEED_QUEUE_NAME']
+        if queue_name = (@options[:queue_name] || ENV['GUARANTEED_QUEUE_NAME'])
           q.url[/#{queue_name}$/]
         elsif queue_env = config[:queue_env]
           q.url.downcase.include? queue_env

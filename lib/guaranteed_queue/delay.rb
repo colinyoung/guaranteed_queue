@@ -16,7 +16,8 @@ module GuaranteedQueue
     # and 1 is the ID of the instance.
     # 
     # In the above example, both image and the ID are determined automatically.
-    def delay task_name, namespace=self.class.name, id=self.id
+    def delay task_name, options={}
+      namespace = options.delete(:namespace) || self.class.name
       body = "#{namespace.underscore.downcase}:#{task_name}[#{id}]".gsub(/^:/,'')
       if GuaranteedQueue.config[:stub_requests]
         begin
@@ -30,9 +31,7 @@ module GuaranteedQueue
           end
         end
       else
-        manager = @_gq_manager || GuaranteedQueue::Manager.new
-        manager.send_message body
-        @_gq_manager ||= manager
+        GuaranteedQueue::Manager.new(options).send_message body
       end
     end
 
