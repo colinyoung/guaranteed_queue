@@ -24,42 +24,44 @@ OptionParser.new do |opts|
     pid_path = pidfile
   end
 
-  opts.on('stop') do
-    if File.exists? pid_path
-      %x{kill `cat #{pid_path}`}
-      GQ::Logger.info "Killed pid #{pid}"
-      FileUtils.rm(pid_path)
-    else
-      GQ::Logger.info "Not running or no pid"
-    end
-    exit!
-  end
-
 end.parse!
 
-# Write pid file to tmp
-File.open(pid_path, "w") {|f| f.write($$) }
+subcommand = ARGV.shift
 
-$LOAD_PATH.push File.dirname(__FILE__) + '/../lib'
-
-begin
-
-  if File.exists? rails_path = "#{Dir.pwd}/config/environment.rb"
-    require 'rails'
-    GQ::Logger.info "Starting GuaranteedQueue for Rails app in #{Dir.pwd}."
-    GQ::Logger.info "Loading application..."
-    require rails_path  
-    ::Rails.application.load_tasks
+case subcommand
+when 'stop'
+  if File.exists? pid_path
+    %x{kill `cat #{pid_path}`}
+    GQ::Logger.info "Killed pid #{pid}"
+    FileUtils.rm(pid_path)
   else
-    GQ::Logger.info 'Not running as part of a Rails application.'
+    GQ::Logger.info "Not running or no pid"
   end
+  exit!
+else # or 'start'
+  # Write pid file to tmp
+  File.open(pid_path, "w") {|f| f.write($$) }
 
-  GuaranteedQueue::Manager.run!
+  $LOAD_PATH.push File.dirname(__FILE__) + '/../lib'
 
-rescue SystemExit, Interrupt
-  
-  GQ::Logger.info "[GuaranteedQueue] Quitting..."
-  FileUtils.rm pid_path
+  begin
 
+    if File.exists? rails_path = "#{Dir.pwd}/config/environment.rb"
+      require 'rails'
+      GQ::Logger.info "Starting GuaranteedQueue for Rails app in #{Dir.pwd}."
+      GQ::Logger.info "Loading application..."
+      require rails_path  
+      ::Rails.application.load_tasks
+    else
+      GQ::Logger.info 'Not running as part of a Rails application.'
+    end
+
+    GuaranteedQueue::Manager.run!
+
+  rescue SystemExit, Interrupt
+    
+    GQ::Logger.info "[GuaranteedQueue] Quitting..."
+    FileUtils.rm pid_path
+
+  end
 end
-
