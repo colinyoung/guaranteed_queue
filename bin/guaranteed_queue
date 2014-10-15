@@ -7,6 +7,8 @@ rescue LoadError
   require 'guaranteed_queue'
 end
 
+require 'optparse'
+
 $0 = "guaranteed_queue"
 
 module GQ
@@ -15,18 +17,25 @@ end
 
 pid_path = "#{Dir.pwd}/tmp/pids/guaranteed_queue.pid"
 
-if ARGV[0] == "stop"
-  
-  if File.exists? pid_path
-    pid = File.read(pid_path)
-    %x{kill #{pid}}
-    GQ::Logger.info "Killed pid #{pid}"
-    FileUtils.rm(pid_path)
-  else
-    GQ::Logger.info "Not running or no pid"
+OptionParser.new do |opts|
+  opts.banner = "Usage: guaranteed_queue [stop] [--pidfile='']"
+
+  opts.on('-p', '--pidfile [PIDFILE]', "Pidfile") do |pidfile|
+    pid_path = pidfile
   end
-  exit!
-end
+
+  opts.on('stop') do
+    if File.exists? pid_path
+      %x{kill `cat #{pid_path}`}
+      GQ::Logger.info "Killed pid #{pid}"
+      FileUtils.rm(pid_path)
+    else
+      GQ::Logger.info "Not running or no pid"
+    end
+    exit!
+  end
+
+end.parse!
 
 # Write pid file to tmp
 File.open(pid_path, "w") {|f| f.write($$) }
