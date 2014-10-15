@@ -86,8 +86,8 @@ module GuaranteedQueue
       end
 
       begin
-        Logger.info "Receiving up to #{limit} messages (#{busy} are busy)"
-        main_queue.receive_message(:limit => limit) do |message|
+        Logger.info "Receiving up to #{limit} messages on #{queue_name(queue)} (#{busy}/#{limit} threads are busy)"
+        queue.receive_message(:limit => limit) do |message|
           handle message
         end
       rescue SignalException => e
@@ -163,9 +163,13 @@ module GuaranteedQueue
 
             begin
               task = task_name
-              task += "[#{task_args.gsub!(/"/,'')}]" if task_args.present?
+              task += "[#{task_args.gsub!(/"/,'')}]" if !task_args.nil? && task_args.length > 0
 
-              ActiveRecord::Base.connection_pool.with_connection do
+              if defined? ActiveRecord
+                ActiveRecord::Base.connection_pool.with_connection do
+                  Rake.application.invoke_task(task)
+                end
+              else
                 Rake.application.invoke_task(task)
               end
             rescue RuntimeError
@@ -174,6 +178,7 @@ module GuaranteedQueue
                 begin
                   Rake.application.invoke_task "GQ:build_and_run[#{args}]"
                 rescue Exception => exception
+                  # exit thread
                   fail! message, exception
                 end
               else
@@ -186,12 +191,12 @@ module GuaranteedQueue
             end
           end
 
-          complete message
+          complete message unless failed?(message)
         rescue Exception => exception
           fail! message, exception
-
-          Thread.new { prune_threads! } # after this thread dies, prune it
           raise exception # fail the message
+        ensure
+          Thread.new { prune_threads! } # after this thread dies, prune it
         end
       end
     end
@@ -248,6 +253,10 @@ module GuaranteedQueue
         message.delete!
         Logger.deleted "Deleted message due to unrecoverable exception #{exception.class.name}: ", message, exception
       end
+    end
+
+    def failed? message
+      !@running.include?(message.id)
     end
 
     def busy?
@@ -328,6 +337,10 @@ module GuaranteedQueue
 
     def max_limit
       receive_options[:limit]
+    end
+
+    def queue_name queue
+      queue.url.split('/').last
     end
   end
 end

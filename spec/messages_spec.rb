@@ -75,7 +75,9 @@ describe GuaranteedQueue::Manager do
 
     # since AWS would handle this for us, stub the receive methods in between
     main_queue.stub(:receive_message).and_return nil
-    dead_letter_queue.stub(:receive_message).and_return msg
+    dead_letter_queue.stub(:receive_message) do |&block|
+      block.call(msg)
+    end
 
     expect { subject.poll main_queue }.to change { subject.accepted }.by 0
     expect { subject.poll dead_letter_queue }.to change { subject.accepted }.by 1
