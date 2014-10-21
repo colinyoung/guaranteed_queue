@@ -174,7 +174,7 @@ module GuaranteedQueue
               end
             rescue RuntimeError
               if $!.to_s == "Don't know how to build task '#{task_name}'"
-                args = message.body.gsub(/\b([\[\]:])\b{1}/, ',').gsub(/,$/, '')
+                args = message.body.gsub(/\b([\[\]:])\b{1}/, ',').gsub(/[,\]]$/, '')
                 begin
                   Rake.application.invoke_task "GQ:build_and_run[#{args}]"
                 rescue Exception => exception
