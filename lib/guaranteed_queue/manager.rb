@@ -120,8 +120,9 @@ module GuaranteedQueue
     end
 
     def send_message message, opts={}
-      Logger.message_sent message
-      main_queue.send_message message, opts
+      receipt = main_queue.send_message message, opts
+      Logger.message_sent "#{message} (#{queue_name(main_queue)})"
+      Logger.info receipt.inspect
     end
 
     def receive message, queue=main_queue
