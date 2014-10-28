@@ -6,6 +6,7 @@ module GuaranteedQueue
         resp = @sqs.client.stub_for(:list_queues)
         resp.data[:queue_urls] = ["https://sqs.us-east-1.amazonaws.com/12345678/StubbedQueue_Test",
                                   "https://sqs.us-east-1.amazonaws.com/12345678/StubbedQueue_Test_DeadLetter"]
+        config.delete(:queue_name)
       end
 
       def stub_periodically_send_messages!
