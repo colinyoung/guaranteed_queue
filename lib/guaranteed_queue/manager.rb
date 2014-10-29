@@ -164,7 +164,7 @@ module GuaranteedQueue
 
             begin
               task = task_name
-              task += "[#{task_args.gsub!(/"/,'')}]" if !task_args.nil? && task_args.length > 0
+              task += "[#{task_args.gsub(/"/,'')}]" if !task_args.nil? && task_args.length > 0
 
               if defined? ActiveRecord
                 ActiveRecord::Base.connection_pool.with_connection do
