@@ -183,7 +183,7 @@ module GuaranteedQueue
                   fail! message, exception
                 end
               else
-                raise "#{task_name}: " + $!
+                raise "#{task_name}: #{$!}"
               end
             ensure
               Rake::Task['GQ:build_and_run'].reenable # required
