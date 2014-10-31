@@ -31,7 +31,7 @@ subcommand = ARGV.shift
 case subcommand
 when 'stop'
   if File.exists? pid_path
-    %x{kill `cat #{pid_path}`}
+    %x{kill -HUP `cat #{pid_path}`}
     GQ::Logger.info "Killed pid #{pid}"
     FileUtils.rm(pid_path)
   else

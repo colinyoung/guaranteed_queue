@@ -101,7 +101,20 @@ module GuaranteedQueue
     # Receive messages
     def poll!
       @poller = Poller.new(manager: self).tap {|p| p.async.run(main_queue) }
+      Signal.trap("HUP") do
+        # gracefully shutdown
+        shutdown!
+      end
       sleep
+    end
+
+    def shutdown!
+      if busy == 0
+        Logger.info 'Shutting down due to SIGHUP'
+        exit!
+      else
+        Logger.warn 'Cannot shutdown, running jobs'
+      end
     end
 
     def handle msg, queue=main_queue

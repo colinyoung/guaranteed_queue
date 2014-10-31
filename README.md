@@ -57,6 +57,11 @@ must be named `ProdQueue_DeadLetter`, so you can start the executable with:
 
 If you only have two queues that your AWS user can see (one called `ProdQueue` and one called `ProdQueue_DeadLetter`), you don't need to specify a name.
 
+## Management
+
+    $ bundle exec guaranteed_queue start
+    $ bundle exec guaranteed_queue stop # will only stop if jobs are not running
+
 ## Rails Integration
 
 To queue a rake task in SQS, do the following (this is using a Rails model as a demo):
